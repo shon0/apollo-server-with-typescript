@@ -1,16 +1,8 @@
-import {ApolloServer, gql} from 'apollo-server';
-
-const typeDefs = gql`
-  type Book {
-    title: String
-    author: String
-  }
-
-  type Query {
-    books: [Book!]
-    comment: String
-  }
-`;
+import {ApolloServer} from 'apollo-server';
+import {loadSchemaSync} from '@graphql-tools/load';
+import {GraphQLFileLoader} from '@graphql-tools/graphql-file-loader';
+import {addResolversToSchema} from '@graphql-tools/schema';
+import {join} from 'path';
 
 // sample data
 const books = [
@@ -24,13 +16,19 @@ const books = [
   },
 ];
 
+const schema = loadSchemaSync(join(__dirname, '../schema.graphql'), {
+  loaders: [new GraphQLFileLoader()],
+});
+
 const resolvers = {
   Query: {
     books: () => books,
   },
 };
 
-const server = new ApolloServer({typeDefs, resolvers});
+const schemaWithResolver = addResolversToSchema({schema, resolvers});
+
+const server = new ApolloServer({schema: schemaWithResolver});
 
 server.listen().then(({url}) => {
   console.log(`🚀 Server ready at ${url}`);
